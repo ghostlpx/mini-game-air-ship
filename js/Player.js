@@ -45,9 +45,9 @@ export default class Player {
       this.x = this.radius
       this.targetX = this.radius
       this.velocityX = 0
-    } else if (this.x > window.innerWidth - this.radius) {
-      this.x = window.innerWidth - this.radius
-      this.targetX = window.innerWidth - this.radius
+    } else if (this.x > GameGlobal.window.innerWidth - this.radius) {
+      this.x = GameGlobal.window.innerWidth - this.radius
+      this.targetX = GameGlobal.window.innerWidth - this.radius
       this.velocityX = 0
     }
     
@@ -73,7 +73,7 @@ export default class Player {
   
   setTargetX(targetX) {
     // 确保目标位置在屏幕范围内
-    this.targetX = Math.max(this.radius, Math.min(targetX, window.innerWidth - this.radius))
+    this.targetX = Math.max(this.radius, Math.min(targetX, GameGlobal.window.innerWidth - this.radius))
   }
   
   reset(x, y) {

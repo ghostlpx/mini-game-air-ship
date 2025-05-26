@@ -1,15 +1,15 @@
 import Player from './Player.js'
 import Obstacle from './Obstacle.js'
 import EnergyOrb from './EnergyOrb.js'
-import ParticleSystem from './ParticleSystem.js'
 import Background from './Background.js'
+import ParticleSystem from './ParticleSystem.js'
 import Storage from './Storage.js'
 import AudioManager from './AudioManager.js'
 
 export default class Game {
   constructor() {
-    this.canvas = window.canvas
-    this.ctx = window.context
+    this.canvas = GameGlobal.canvas
+    this.ctx = GameGlobal.context
     
     // 确保Canvas和Context存在
     if (!this.canvas || !this.ctx) {
@@ -17,8 +17,8 @@ export default class Game {
       return
     }
     
-    this.width = window.innerWidth || 375
-    this.height = window.innerHeight || 667
+    this.width = GameGlobal.window.innerWidth || 375
+    this.height = GameGlobal.window.innerHeight || 667
     
     console.log(`游戏画布尺寸: ${this.width} x ${this.height}`)
     
@@ -50,19 +50,43 @@ export default class Game {
       return
     }
     
-    console.log('游戏初始化开始')
+    console.log('游戏初始化开始，Canvas信息:', {
+      canvas: this.canvas,
+      context: this.ctx,
+      width: this.width,
+      height: this.height,
+      canvasWidth: this.canvas.width,
+      canvasHeight: this.canvas.height
+    })
+    
     this.bindEvents()
     this.showStartScreen()
+    
+    // 强制首次渲染
+    this.render()
+    console.log('首次渲染完成')
+    
     this.gameLoop()
   }
   
   bindEvents() {
     wx.onTouchStart((e) => {
+      console.log('触摸事件:', e.touches[0])
+      
       if (this.gameState === 'start' || this.gameState === 'gameOver') {
         this.startGame()
       } else if (this.gameState === 'playing') {
         // 获取触摸位置的横坐标
-        const touchX = e.touches[0].clientX
+        const touch = e.touches[0]
+        const touchX = touch.clientX || touch.x || 0
+        
+        console.log('触摸坐标:', {
+          clientX: touch.clientX,
+          x: touch.x,
+          pageX: touch.pageX,
+          使用的X: touchX,
+          游戏宽度: this.width
+        })
         
         // 跳跃
         this.player.jump()
@@ -202,12 +226,16 @@ export default class Game {
   }
   
   render() {
-    if (!this.ctx) return
+    if (!this.ctx) {
+      console.error('渲染失败：绘图上下文不存在')
+      return
+    }
     
-    // 清空画布
-    this.ctx.fillStyle = '#000011'
+    // 清空画布 - 使用深蓝色背景
+    this.ctx.fillStyle = '#000022'
     this.ctx.fillRect(0, 0, this.width, this.height)
     
+    // 根据游戏状态渲染不同内容
     if (this.gameState === 'start') {
       this.renderStartScreen()
     } else if (this.gameState === 'playing') {
@@ -218,25 +246,33 @@ export default class Game {
   }
   
   renderStartScreen() {
-    this.background.render(this.ctx)
+    // 渲染背景
+    if (this.background) {
+      this.background.render(this.ctx)
+    }
     
-    this.ctx.fillStyle = '#ffffff'
-    this.ctx.font = 'bold 48px Arial'
+    // 绘制标题
+    this.ctx.fillStyle = '#00FFFF'  // 亮青色
+    this.ctx.font = 'bold 40px Arial'
     this.ctx.textAlign = 'center'
-    this.ctx.fillText('🚀 星际跳跃', this.width / 2, this.height / 2 - 120)
+    this.ctx.fillText('🚀 星际跳跃', this.width / 2, this.height / 2 - 100)
     
-    this.ctx.font = '24px Arial'
-    this.ctx.fillText('点击屏幕开始游戏', this.width / 2, this.height / 2 - 20)
+    // 绘制说明文字
+    this.ctx.fillStyle = '#FFFFFF'  // 白色
+    this.ctx.font = 'bold 20px Arial'
+    this.ctx.fillText('点击屏幕开始游戏', this.width / 2, this.height / 2 - 40)
     
-    this.ctx.fillStyle = '#888888'
-    this.ctx.font = '18px Arial'
-    this.ctx.fillText('点击跳跃，避开障碍物，收集能量球', this.width / 2, this.height / 2 + 20)
+    this.ctx.fillStyle = '#FFFF00'  // 黄色
+    this.ctx.font = '16px Arial'
+    this.ctx.fillText('点击跳跃，避开障碍物，收集能量球', this.width / 2, this.height / 2 - 10)
     
     // 显示历史最佳记录
-    this.ctx.fillStyle = '#FFD700'
-    this.ctx.font = 'bold 20px Arial'
-    this.ctx.fillText(`最高分: ${this.highScore}`, this.width / 2, this.height / 2 + 60)
-    this.ctx.fillText(`最远距离: ${this.bestDistance}米`, this.width / 2, this.height / 2 + 90)
+    this.ctx.fillStyle = '#FFD700'  // 金色
+    this.ctx.font = 'bold 18px Arial'
+    this.ctx.fillText(`最高分: ${this.highScore}`, this.width / 2, this.height / 2 + 40)
+    this.ctx.fillText(`最远距离: ${this.bestDistance}米`, this.width / 2, this.height / 2 + 70)
+    
+    console.log('开始画面渲染完成')
   }
   
   renderGame() {
@@ -325,6 +361,13 @@ export default class Game {
     this.update(deltaTime)
     this.render()
     
-    requestAnimationFrame(() => this.gameLoop())
+    // 使用适配的requestAnimationFrame
+    const targetWindow = GameGlobal.window || GameGlobal.gameWindow
+    if (targetWindow && targetWindow.requestAnimationFrame) {
+      targetWindow.requestAnimationFrame(() => this.gameLoop())
+    } else {
+      // 后备方案
+      setTimeout(() => this.gameLoop(), 1000 / 60)
+    }
   }
 }
